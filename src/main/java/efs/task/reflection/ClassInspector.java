@@ -1,8 +1,12 @@
 package efs.task.reflection;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ClassInspector {
 
@@ -18,7 +22,14 @@ public class ClassInspector {
   public static Collection<String> getAnnotatedFields(final Class<?> type,
       final Class<? extends Annotation> annotation) {
     //TODO usuń zawartość tej metody i umieść tutaj swoje rozwiązanie
-    return Collections.emptyList();
+    Set<String> annotatedFields = new HashSet<>();
+    Field[] fields = type.getDeclaredFields();
+    for (Field field : fields) {
+      if (field.isAnnotationPresent(annotation)) {
+        annotatedFields.add(field.getName());
+      }
+    }
+    return annotatedFields;
   }
 
   /**
@@ -32,7 +43,19 @@ public class ClassInspector {
    */
   public static Collection<String> getAllDeclaredMethods(final Class<?> type) {
     //TODO usuń zawartość tej metody i umieść tutaj swoje rozwiązanie
-    return Collections.emptyList();
+    Set<String> allMethods = new HashSet<>();
+    Method[] methods = type.getDeclaredMethods();
+    for (Method method : methods) {
+      allMethods.add(method.getName());
+    }
+    Class<?>[] interfaces = type.getInterfaces();
+    for (Class<?> iface : interfaces) {
+      Method[] ifaceMethods = iface.getDeclaredMethods();
+      for (Method method : ifaceMethods) {
+        allMethods.add(method.getName());
+      }
+    }
+    return allMethods;
   }
 
   /**
@@ -51,6 +74,23 @@ public class ClassInspector {
    */
   public static <T> T createInstance(final Class<T> type, final Object... args) throws Exception {
     //TODO usuń zawartość tej metody i umieść tutaj swoje rozwiązanie
-    return null;
+    Constructor<?>[] constructors = type.getDeclaredConstructors();
+    for (Constructor<?> constructor : constructors) {
+      Class<?>[] parameterTypes = constructor.getParameterTypes();
+      if (parameterTypes.length == args.length) {
+        boolean match = true;
+        for (int i = 0; i < parameterTypes.length; i++) {
+          if (!parameterTypes[i].isInstance(args[i])) {
+            match = false;
+            break;
+          }
+        }
+        if (match) {
+          constructor.setAccessible(true);
+          return type.cast(constructor.newInstance(args));
+        }
+      }
+    }
+    throw new Exception("No matching constructor found");
   }
 }
